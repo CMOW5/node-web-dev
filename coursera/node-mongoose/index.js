@@ -11,19 +11,44 @@ const connect = mongoose.connect(url, {
 connect.then((db) => {
     console.log('Connected correctly to server');
 
+    /*
     var newDish = Dishes({
         name : "Uthappizza",
         description : "test"
     });
-
-    newDish.save()
+    */
+    
+    Dishes.create({
+        name : "Uthappizza",
+        description : "test"
+    })
     .then((dish) => {
         console.log(dish);
 
-        return Dishes.find({}).exec();
+        return Dishes.findByIdAndUpdate(dish._id,{
+            $set: {
+                description : 'Updated test'
+            }
+            },{
+                new : true /* return the updated dish */
+            })
+            .exec();
     })
-    .then((dishes) => {
-        console.log(dishes);
+    .then((dish) => {
+        console.log(dish);
+        
+        dish.comments.push({
+            rating: 5,
+            comment: 'new comment',
+            author: 'new Author'
+        });
+
+        return dish.save();
+
+    })
+    .then((dish) => {
+        console.log(dish);
+        
         return db.collection('dishes').drop();
     })
     .then(() => {
