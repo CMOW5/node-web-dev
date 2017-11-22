@@ -17,13 +17,13 @@ var dishRouter = require('./routes/dishRouter');
 
 const url = 'mongodb://localhost:27017/conFusion';
 const connect = mongoose.connect(url, {
-    useMongoClient : true,
-    /* other options */
+  useMongoClient: true,
+  /* other options */
 });
 
 connect.then((db) => {
-    console.log('Connectec corretly to server');
-}, (err) => {console.log(err); });
+  console.log('Connectec corretly to server');
+}, (err) => { console.log(err); });
 
 var app = express();
 
@@ -39,19 +39,45 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+function auth(req, res, next) {
+  console.log(req.headers);
+  var authHeader = req.headers.authorization;
+  if (!authHeader) {
+    var err = new Error('You are not authenticated!');
+    res.setHeader('WWW-Authenticate', 'Basic');
+    err.status = 401;
+    next(err);
+    return;
+  }
+
+  var auth = new Buffer(authHeader.split(' ')[1], 'base64').toString().split(':');
+  var user = auth[0];
+  var pass = auth[1];
+  if (user == 'admin' && pass == 'password') {
+      next(); // authorized
+  } else {
+      var err = new Error('You are not authenticated!');
+      res.setHeader('WWW-Authenticate', 'Basic');      
+      err.status = 401;
+      next(err);
+  }
+}
+
+app.use(auth);
+
 app.use('/', index);
 app.use('/users', users);
 app.use('/dishes', dishRouter);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   var err = new Error('Not Found');
   err.status = 404;
   next(err);
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
